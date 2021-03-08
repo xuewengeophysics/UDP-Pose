@@ -10,7 +10,7 @@
 
 ### 0. Idea
 
-+ 在hrnet源码中，把由水平反转的图得到的热图shift了一个像素，这个操作没有任何文档记载描述，issue里也有相同的疑问，作者并没有回答，关键是这个操作对指标影响非常大。在打19年coco时察觉到数据流有偏的问题，经过深入研究、推理还有对其他repo的分析，才发现这个shift 一个像素的操作就是为了弥补数据流有偏所以起效的。
++ 在hrnet源码中，把由水平反转的图得到的热图shift了一个像素，这个操作没有任何文档记载描述，[issue里也有相同的疑问](https://github.com/leoxiaobin/deep-high-resolution-net.pytorch/issues/49)，作者并没有回答，关键是这个操作对指标影响非常大。在打19年coco时察觉到数据流有偏的问题，经过深入研究、推理还有对其他repo的分析，才发现这个shift 一个像素的操作就是为了弥补数据流有偏所以起效的。
 
 ```
 # lib/dataset/JointDataset.py中的def __getitem__(self, idx):函数中
@@ -42,7 +42,9 @@ def fliplr_joints(joints, joints_vis, width, matched_parts):
 
 <img src="C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20200924144000524.png" alt="image-20200924144000524" style="zoom:67%;" />
 
-+ 解决有偏的思路关键是作者觉得离散空间分析问题时有量化误差，所以想在连续空间中进行分析避免有偏。因此使用单位长度去度量图像大小，而非像素多少
++ 解决有偏的思路关键是作者觉得离散空间分析问题时有量化误差，所以想在**连续空间**中进行分析避免有偏。因此使用单位长度去度量图像大小，而非像素多少
+
+![image-20210308151620934](C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20210308151620934.png)
 
 ### 1. Introduction
 
@@ -75,13 +77,13 @@ def fliplr_joints(joints, joints_vis, width, matched_parts):
 
 #### 2.1 数据转换
 
-##### 2.1.1 原图坐标系统->神经网络输入坐标系统
+##### 2.1.1 原图坐标系统(source image coordinate system)->神经网络输入坐标系统(network input coordinate system)
 
 <img src="C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20200924085603433.png" alt="image-20200924085603433" style="zoom:67%;" />
 
 + simple baselines/hrnet使用的有偏数据转换方法
 
-<img src="C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20200924094832940.png" alt="image-20200924094832940" style="zoom:67%;" />
+
 
 ```
 # lib/dataset/JointDataset.py中的def __getitem__(self, idx):函数中        
@@ -102,7 +104,7 @@ def fliplr_joints(joints, joints_vis, width, matched_parts):
 
 + UDP使用的无偏数据转换方法
 
-<img src="C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20200924095122949.png" alt="image-20200924095122949" style="zoom:67%;" />
+
 
 ```
 # lib/dataset/JointDataset.py中的def __getitem__(self, idx):函数中        
@@ -119,11 +121,13 @@ def fliplr_joints(joints, joints_vis, width, matched_parts):
         joints[:, 0:2] = rotate_points(joints[:, 0:2], r, c, self.image_size, s, False)
 ```
 
-##### 2.1.2 神经网络输入坐标系统->神经网络输出坐标系统
+![image-20210308180753181](C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20210308180753181.png)  
+
+##### 2.1.2 神经网络输入坐标系统(network input coordinate system)->神经网络输出坐标系统(network output  coordinate system)
 
 + simple baselines/hrnet使用的有偏数据转换方法
 
-<img src="C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20200924115547815.png" alt="image-20200924115547815" style="zoom: 80%;" />
+![image-20210308180518142](C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20210308180518142.png)
 
 ```
 # lib/dataset/JointDataset.py中的def generate_target(self, joints, joints_vis):函数中                
@@ -136,7 +140,7 @@ def fliplr_joints(joints, joints_vis, width, matched_parts):
 
 + UDP使用的无偏数据转换方法
 
-<img src="C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20200924120739449.png" alt="image-20200924120739449" style="zoom:80%;" />
+![image-20210308180706183](C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20210308180706183.png)
 
 ```
 # lib/dataset/JointDataset.py中的def generate_target(self, joints, joints_vis):函数中                
@@ -151,7 +155,7 @@ def fliplr_joints(joints, joints_vis, width, matched_parts):
 
 + simple baselines/hrnet使用的有偏数据转换方法
 
-<img src="C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20200924163041516.png" alt="image-20200924163041516" style="zoom:67%;" />
+![image-20210308181330604](C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20210308181330604.png)
 
 ```
 # 在lib/core/inference.py中
@@ -200,7 +204,7 @@ def transform_preds(coords, center, scale, output_size):
 
 + UDP使用的无偏数据转换方法
 
-<img src="C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20200924163938456.png" alt="image-20200924163938456" style="zoom:67%;" />
+![image-20210308181247139](C:\Users\86138\AppData\Roaming\Typora\typora-user-images\image-20210308181247139.png)
 
 ```
 # 在lib/core/inference.py中
