@@ -60,8 +60,8 @@ def fliplr_joints(joints, joints_vis, width, matched_parts):
 
 #### 	1.1 What
 
-+ unit length-based measurement
-+ offset-based encoding-decoding
++ unbiased coordinate system transformation: unit length-based measurement
++ unbiased keypoint format transformation: offset-based encoding-decoding
 
 #### 	1.2 Why
 
